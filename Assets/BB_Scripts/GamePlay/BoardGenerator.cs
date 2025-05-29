@@ -4,6 +4,8 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using DG.Tweening;
 
+// Lớp chịu trách nhiệm khởi tạo bàn chơi dựa trên dữ liệu level
+// và quản lý các thao tác xếp hàng hóa trên kệ
 public class BoardGenerator : MonoBehaviour
 {
     public Transform shelfRoot;
@@ -66,13 +68,15 @@ public class BoardGenerator : MonoBehaviour
 
   
 
-    // Start is called before the first frame update
+    // Hàm khởi tạo MonoBehaviour, hiện chưa cần xử lý gì thêm
     void Start()
     {
 
 
     }
 
+    // Hàm chính để tạo bàn chơi dựa trên dữ liệu level hiện tại
+    // Bao gồm load scene, sản phẩm và sinh map sắp xếp trên các kệ
     public void GenBoard()
     {
         //Debug.Log("Scene ID " + currentLv.sceneID);
@@ -84,6 +88,7 @@ public class BoardGenerator : MonoBehaviour
         GenerateBoard();
     }
 
+    // Dọn dẹp dữ liệu bàn chơi cũ trước khi tạo bàn mới
     public void CleanBoard()
     {
         Destroy(transform.GetChild(0).gameObject);
@@ -101,6 +106,7 @@ public class BoardGenerator : MonoBehaviour
     }
 
 
+    // Tải scene chứa hệ thống kệ và tính toán số kệ cần thiết
     private void LoadScene()
     {
         //Resources.Load("LevelSO/" + "Level" + GameManager.instance.currentLevelIndex.ToString()) as LevelConfig;
@@ -109,12 +115,14 @@ public class BoardGenerator : MonoBehaviour
         sceneObj.transform.parent = transform;
         shelfRoot = sceneObj.transform;
 
+        // Đếm số kệ thường và kệ đơn trong scene vừa tải
         int shelfCountTemp = 0;
 
         int singlePushCountTemp = 0;
 
         for (int i = 0; i < shelfRoot.GetChild(0).childCount; i++)
         {
+            // Kiểm tra loại kệ để xác định số lượng kệ ba ô và kệ đơn
             ShelfController shelfController = shelfRoot.GetChild(0).GetChild(i).GetComponent<ShelfController>();
             if (shelfController.type == ShelfController.ShelfType.TRIPLE)
                 shelfCountTemp++;
@@ -131,19 +139,22 @@ public class BoardGenerator : MonoBehaviour
        
     }
 
+    // Đọc dữ liệu hàng hóa cần sử dụng cho level và tạo danh sách prefab
     private void LoadProduct()
     {
         Debug.Log("Product Set " + currentLv.dynamicProductSet);
 
         int productIndex = 0;
 
-        if (currentLv.dynamicProductSet == 100000)         
+        // Nếu dynamicProductSet = 100000 nghĩa là level lựa chọn ngẫu nhiên bộ sản phẩm
+        if (currentLv.dynamicProductSet == 100000)
         {
             productIndex = Random.Range(1, productSetData.productSetList.Count);
         }
 
         else
         {
+            // Tìm bộ sản phẩm phù hợp với ID chỉ định trong level
             for (int i = 0; i < productSetData.productSetList.Count; i++)
             {
                 if (currentLv.dynamicProductSet == productSetData.productSetList[i].ID)
@@ -175,7 +186,7 @@ public class BoardGenerator : MonoBehaviour
 
         productPairCount = currentLv.totalProductCount;
 
-        //Fix Shelf count
+        // Đảm bảo tổng số ô chứa đủ để đặt toàn bộ sản phẩm
         if (shelfCount * shelfDeepMax < (productPairCount + shelfCount))
         {
             Debug.Log("Must Fix Shelf Count");
@@ -183,6 +194,7 @@ public class BoardGenerator : MonoBehaviour
             shelfDeepMax++;
         }
 
+        // Kiểm tra lại nhiều lần vì số ô có thể vẫn chưa đủ sau khi tăng
         if (shelfCount * shelfDeepMax < (productPairCount + shelfCount))
         {
             Debug.Log("Must Fix Shelf Count");
@@ -190,6 +202,7 @@ public class BoardGenerator : MonoBehaviour
             shelfDeepMax++;
         }
 
+        // Lần kiểm tra cuối cùng, nếu vẫn thiếu sẽ log lỗi để thiết kế level xem lại
         if (shelfCount * shelfDeepMax < (productPairCount + shelfCount))
         {
             Debug.Log("Must Fix Shelf Count");
@@ -207,7 +220,8 @@ public class BoardGenerator : MonoBehaviour
         }
     }
 
-    // Update is called once per frame
+    // Lắng nghe thao tác kéo thả hàng hóa của người chơi
+    // Chỉ xử lý khi đang ở trạng thái IN_GAME
     void Update()
     {
         if (GameManager.Instance.currentState != GameManager.GAME_STATE.IN_GAME)
@@ -293,6 +307,7 @@ public class BoardGenerator : MonoBehaviour
 
     }
 
+    // Tính toán vị trí chuột trong thế giới và di chuyển hàng hóa theo
     private void SetCurrentWaresPosByMouse()
     {
         mousePos = new Vector3(Input.mousePosition.x, Input.mousePosition.y, Camera.main.WorldToScreenPoint(currentSelectWares.transform.position).z);
@@ -301,6 +316,7 @@ public class BoardGenerator : MonoBehaviour
         currentSelectWares.transform.position = new Vector3(mouseWorldPos.x, mouseWorldPos.y, focusInZ) - offsetAnchor;
     }
 
+    // Lấy danh sách ShelfController trong scene vừa load
     public void GetSelfContainerList()
     {
         Transform mainRoot = shelfRoot.GetChild(0);
@@ -309,6 +325,7 @@ public class BoardGenerator : MonoBehaviour
         {
             Transform childItem = mainRoot.GetChild(i);
             ShelfController shelfItem = childItem.GetComponent<ShelfController>();
+            // Phân loại kệ để thêm vào danh sách tương ứng
             if (shelfItem.type == ShelfController.ShelfType.TRIPLE)
             {
                 shelfItem.GenerateWarePoint();
@@ -323,8 +340,10 @@ public class BoardGenerator : MonoBehaviour
         }
     }
 
+    // Sinh ra các đối tượng hàng hóa trên từng kệ dựa vào dữ liệu đã tính
     public void GenerateBoard()
     {
+        // Bắt đầu tìm một món hàng ở hàng đầu tiên để làm gốc gợi ý
         for (int i = 0; i < shelfControllerList.Count; i++)
         {
             for (int j = 0; j < shelfControllerList[i].deptSize; j++)
@@ -367,10 +386,11 @@ public class BoardGenerator : MonoBehaviour
                 }
             }
 
+            // Sau khi đặt hàng hoá, loại bỏ các hàng rỗng để tối ưu hiển thị
             shelfControllerList[i].CleanEmptyRow();
         }
 
-        //if board has single push
+        // Nếu level có kệ đẩy đơn, khởi tạo thêm hàng hoá cho phần này
         if (singlePushCount > 0)
         {
             for (int i = 0; i < singlePushControllerList.Count; i++)
@@ -416,10 +436,13 @@ public class BoardGenerator : MonoBehaviour
         }
     }
 
+    // Tìm và gợi ý ba món hàng có thể ghép thành bộ
     public void ProcessHint()
     {
         List<HintItem> waresRemove = new List<HintItem>();
+        // Bước 1: duyệt từng kệ để lấy món hàng ở hàng đầu tiên
 
+        // Tiếp tục quét toàn bộ kệ để tìm hai món còn lại cùng loại
         for (int i = 0; i < shelfControllerList.Count; i++)
         {
             for (int j = 0; j < shelfControllerList[i].shelfSlotList[0].warePointList.Count; j++)
@@ -440,6 +463,7 @@ public class BoardGenerator : MonoBehaviour
             if (waresRemove.Count > 0)
                 break;
         }
+        // Bước 2: tiếp tục tìm 2 món còn lại trùng loại ở mọi vị trí
 
         for (int i = 0; i < shelfControllerList.Count; i++)
         {
@@ -501,6 +525,7 @@ public class BoardGenerator : MonoBehaviour
                 break;
         }
 
+        // Đủ ba món cùng loại -> hiển thị hiệu ứng gợi ý và loại chúng khỏi kệ
         if (waresRemove.Count == 3)
         {
             Debug.Log("Find pair ");
@@ -540,6 +565,7 @@ public class BoardGenerator : MonoBehaviour
         }
     }
 
+    // Trộn ngẫu nhiên vị trí các hàng hóa trên từng kệ
     public void ProcessShuffle()
     {
         for (int i = 0; i < shelfControllerList.Count; i++)
@@ -548,6 +574,7 @@ public class BoardGenerator : MonoBehaviour
         }
     }
 
+    // Hoán đổi thứ tự các slot trong một kệ cụ thể
     private void ShuffleShelf(int shelfIndex)
     {
         List<ShelfSlot> slotRandomList = new List<ShelfSlot>();
@@ -568,6 +595,7 @@ public class BoardGenerator : MonoBehaviour
     }
 
 
+    // Di chuyển item gợi ý lên khu vực hiển thị và hủy nó sau khi hoàn thành
     private void RemoveHintItems(GameObject hintItem, int itemIndex)
     {
         hintItem.transform.DOMove(new Vector3((itemIndex - 1) * GameManager.Instance.gamePlaySetting.tileSizeX, 9, 35), 0.25f).SetEase(Ease.InQuad).OnComplete
@@ -580,6 +608,7 @@ public class BoardGenerator : MonoBehaviour
 
     }
 
+    // Hủy đối tượng gợi ý sau một khoảng delay
     IEnumerator RemoveHintItemsIE(GameObject hintItem)
     {
         yield return new WaitForSeconds(1.0f);
@@ -588,6 +617,7 @@ public class BoardGenerator : MonoBehaviour
 
     }
 
+    // Hiệu ứng khi hiển thị gợi ý cho người chơi
     IEnumerator ShowHintVfx()
     {
         yield return new WaitForSeconds(1.0f);
@@ -597,6 +627,7 @@ public class BoardGenerator : MonoBehaviour
         GameManager.Instance.clearVfx.PlayAnim();
     }
 
+    // Trả về vị trí của sản phẩm trong danh sách productIDList
     public int GetProductIndex(int productPara)
     {
         int productIndex = -1;
@@ -613,6 +644,7 @@ public class BoardGenerator : MonoBehaviour
         return productIndex;
     }
 
+    // Raycast xác định kệ đang được trỏ tới bằng chuột
     public ShelfController FindHittedShelf()
     {
         ShelfController shelf = null;
@@ -629,6 +661,7 @@ public class BoardGenerator : MonoBehaviour
 
     }
 
+    // Kiểm tra xem người chơi có đang nhấn vào một hàng hóa ở hàng đầu tiên hay không
     public bool IsHitWares()
     {
         bool isHit = false;
@@ -650,6 +683,7 @@ public class BoardGenerator : MonoBehaviour
     }
 
     #region GEN_MAP_FUNCTION
+    // Tạo dữ liệu sắp xếp hàng hóa cho level: khởi tạo pool, xáo trộn và chia về từng kệ
     private void GenMap()
     {
         InitPairItems();
@@ -672,6 +706,7 @@ public class BoardGenerator : MonoBehaviour
         FillData();
     }
 
+    // Tính toán số cặp sản phẩm mỗi loại sẽ xuất hiện trên bàn
     private void InitPairItems()
     {
         productPairCountList = new int[productIDList.Length];
@@ -713,6 +748,7 @@ public class BoardGenerator : MonoBehaviour
 
     }
 
+    // Khởi tạo các pool chứa ID sản phẩm dựa trên số lượng cặp đã tính
     private void LoadItemsToPool()
     {
         for (int i = 0; i <= productIDList.Length; i++)
@@ -756,8 +792,10 @@ public class BoardGenerator : MonoBehaviour
         //     Debug.Log("PAIR " + productPoolList[i].productList.Count + "  =  " + productPoolList[i].productID);
     }
 
+    // Sinh dữ liệu ô chứa cho toàn bộ kệ dựa trên pool sản phẩm đã chuẩn bị
     private void LoadTiles()
     {
+        // Khởi tạo danh sách tile rỗng cho toàn bộ kệ
 
         for (int i = 0; i < shelfDeepMax * shelfCount; i++)
         {
@@ -768,6 +806,7 @@ public class BoardGenerator : MonoBehaviour
             originalTileList.Add(tile);
         }
 
+        // Trường hợp màn đầu tiên: thiết lập ô trống cố định cho hướng dẫn
         Debug.Log("Empty slot in first round : " + currentLv.roundsEmptyPlaceCount);
 
         //for first level -->tutorial
@@ -823,6 +862,7 @@ public class BoardGenerator : MonoBehaviour
             return;
         }
 
+        // Đánh dấu ô trống ở cột đầu theo cấu hình level
         //Init first Column - 1
         for (int i = 0; i < shelfCount; i++)
         {
@@ -835,6 +875,7 @@ public class BoardGenerator : MonoBehaviour
 
         }
 
+        // Đánh dấu slot đầu tiên của các cột còn lại
         //Init remain Column - 1 -> for first slot
         for (int i = shelfCount; i < shelfDeepMax * shelfCount; i++)
         {
@@ -847,6 +888,7 @@ public class BoardGenerator : MonoBehaviour
 
         }
         //if remain -1 insert next slot 1 -> for second slot
+        // Nếu vẫn còn ô trống, tiếp tục gán cho slot thứ hai
         if (productPoolList[productPoolList.Count - 1].productList.Count > 0)
         {
             for (int i = shelfCount; i < shelfDeepMax * shelfCount; i++)
@@ -862,6 +904,7 @@ public class BoardGenerator : MonoBehaviour
         }
 
         //if remain -1 for last slot
+        // Nếu kệ sâu hơn 3 tầng và còn slot, gán cho ô cuối
         if (shelfDeepMax > 3 && productPoolList[productPoolList.Count - 1].productList.Count > 0)
         {
             if (productPoolList[productPoolList.Count - 1].productList.Count > 0)
@@ -914,6 +957,7 @@ public class BoardGenerator : MonoBehaviour
 
             MixSinglePush();
         }
+        // Gán ID sản phẩm cho các vị trí còn lại bằng cách rút từ pool
 
         int rollIndex = 0;
         //Init remain Column positive product ID
@@ -967,6 +1011,7 @@ public class BoardGenerator : MonoBehaviour
 
     }
 
+    // Tìm index đầu tiên trong pool còn sản phẩm
     public int FindIndexInPool()
     {
         int index = -1;
@@ -987,6 +1032,7 @@ public class BoardGenerator : MonoBehaviour
         return index;
     }
 
+    // Xáo trộn vị trí ba ô trong mỗi tile để tạo sự đa dạng
     public void ShuffleElementInTiles()
     {
         for (int i = 0; i < originalTileList.Count; i++)
@@ -995,6 +1041,7 @@ public class BoardGenerator : MonoBehaviour
         }
     }
 
+    // Hoán đổi ngẫu nhiên vị trí các phần tử trong một tile
     public void ShuffleTile(ShelfTile tile)
     {
         //Debug.Log("SHUFFLE");
@@ -1025,6 +1072,7 @@ public class BoardGenerator : MonoBehaviour
 
     }
 
+    // Xáo trộn danh sách sản phẩm cho các kệ đẩy đơn
     public void MixSinglePush()
     {
         List<int> tempList = new List<int>();
@@ -1043,6 +1091,7 @@ public class BoardGenerator : MonoBehaviour
         }
     }
 
+    // Trộn thứ tự cột đầu tiên để tránh trùng lặp dễ đoán
     public void MixFirstColumn()
     {
         List<ShelfTile> tempList = new List<ShelfTile>();
@@ -1061,6 +1110,7 @@ public class BoardGenerator : MonoBehaviour
         }
     }
 
+    // Trộn các cột còn lại
     public void MixRemainColumn()
     {
         List<ShelfTile> tempList = new List<ShelfTile>();
@@ -1080,6 +1130,7 @@ public class BoardGenerator : MonoBehaviour
     }
 
 
+    // Chuyển dữ liệu tile gốc thành dạng ma trận dễ truy cập khi sinh kệ
     public void FillData()
     {
         cellListData = new List<ShelfCell>();
@@ -1111,6 +1162,7 @@ public class BoardGenerator : MonoBehaviour
 #region CLASS_GEN_MAP
 [System.Serializable]
 
+// Lưu trữ tạm các ID sản phẩm dùng để phân phát cho tile
 public class ProductPool
 {
     public int productID;
@@ -1122,6 +1174,7 @@ public class ProductPool
 
 [System.Serializable]
 
+// Đại diện cho 1 ô trên kệ chứa tối đa 3 vị trí sản phẩm
 public class ShelfTile
 {
     public List<int> tileList = new List<int>();
@@ -1129,6 +1182,7 @@ public class ShelfTile
 
 [System.Serializable]
 
+// Tập hợp nhiều ShelfTile để mô tả một kệ hoàn chỉnh
 public class ShelfCell
 {
     public List<ShelfTile> shelfTileList = new List<ShelfTile>();
@@ -1136,6 +1190,7 @@ public class ShelfCell
 
 [System.Serializable]
 
+// Thông tin dùng cho hệ thống gợi ý tìm bộ sản phẩm
 public class HintItem
 {
     public WaresController waresController;
