@@ -186,7 +186,8 @@ public class BoardGenerator : MonoBehaviour
 
         productPairCount = currentLv.totalProductCount;
 
-        // Đảm bảo tổng số ô chứa đủ để đặt toàn bộ sản phẩm
+        // Kiểm tra tổng số ô chứa trên tất cả kệ có đủ để đặt hết sản phẩm hay không
+        // Nếu chưa đủ sẽ tăng chiều sâu của kệ (shelfDeepMax) cho tới khi đáp ứng
         if (shelfCount * shelfDeepMax < (productPairCount + shelfCount))
         {
             Debug.Log("Must Fix Shelf Count");
@@ -202,7 +203,7 @@ public class BoardGenerator : MonoBehaviour
             shelfDeepMax++;
         }
 
-        // Lần kiểm tra cuối cùng, nếu vẫn thiếu sẽ log lỗi để thiết kế level xem lại
+        // Lần kiểm tra cuối cùng, nếu vẫn thiếu sẽ log lỗi để nhà thiết kế xem lại dữ liệu level
         if (shelfCount * shelfDeepMax < (productPairCount + shelfCount))
         {
             Debug.Log("Must Fix Shelf Count");
@@ -718,6 +719,8 @@ public class BoardGenerator : MonoBehaviour
 
         int countForLoop = productPairCount;
 
+        // Phân phối số lượng xuất hiện cho từng loại hàng hóa.
+        // Vòng lặp chia đều dần dần để tránh chênh lệch quá lớn giữa các loại.
         while (countForLoop > 0)
         {
             for (int i = 0; i < productIDList.Length; i++)
@@ -751,6 +754,8 @@ public class BoardGenerator : MonoBehaviour
     // Khởi tạo các pool chứa ID sản phẩm dựa trên số lượng cặp đã tính
     private void LoadItemsToPool()
     {
+        // Khởi tạo các pool chứa ID sản phẩm. Mỗi pool tương ứng một loại hàng
+        // Riêng pool cuối cùng (ID = -1) dùng để sinh ô trống trên kệ
         for (int i = 0; i <= productIDList.Length; i++)
         {
             ProductPool pPool = new ProductPool();
@@ -759,6 +764,7 @@ public class BoardGenerator : MonoBehaviour
             {
                 pPool.productID = productIDList[i];
 
+                // Nhân 3 vì mỗi cặp sản phẩm sẽ chiếm 3 vị trí
                 for (int j = 0; j < 3 * productPairCountList[i]; j++)
                 {
                     pPool.productList.Add(pPool.productID);
@@ -769,6 +775,7 @@ public class BoardGenerator : MonoBehaviour
             {
                 pPool.productID = -1;
 
+                // Số lượng phần tử rỗng tương ứng với số ô trống cần có
                 for (int j = 0; j < 3 * positivePair; j++)
                 {
                     pPool.productList.Add(pPool.productID);
@@ -777,6 +784,7 @@ public class BoardGenerator : MonoBehaviour
                 //if shelf has single push
                 if (singlePushCount > 0)
                 {
+                    // Bổ sung ô trống cho các kệ đẩy đơn phía ngoài
                     for (int j = 0; j < 4 * singlePushCount; j++)
                     {
                         pPool.productList.Add(pPool.productID);
@@ -795,7 +803,8 @@ public class BoardGenerator : MonoBehaviour
     // Sinh dữ liệu ô chứa cho toàn bộ kệ dựa trên pool sản phẩm đã chuẩn bị
     private void LoadTiles()
     {
-        // Khởi tạo danh sách tile rỗng cho toàn bộ kệ
+        // Bước đầu tiên: tạo danh sách tile rỗng cho toàn bộ kệ
+        // Mỗi tile tương ứng với 3 vị trí đặt hàng hóa trên kệ
 
         for (int i = 0; i < shelfDeepMax * shelfCount; i++)
         {
@@ -809,7 +818,7 @@ public class BoardGenerator : MonoBehaviour
         // Trường hợp màn đầu tiên: thiết lập ô trống cố định cho hướng dẫn
         Debug.Log("Empty slot in first round : " + currentLv.roundsEmptyPlaceCount);
 
-        //for first level -->tutorial
+        // Nếu đây là màn đầu tiên (tutorial) thì bố trí một số ô trống cố định
 
         if (currentLv.ID == 1)
         {
@@ -825,6 +834,7 @@ public class BoardGenerator : MonoBehaviour
 
             for (int i = shelfCount; i < shelfDeepMax * shelfCount; i++)
             {
+            // Các kệ phía sau đều để trống nhằm tập trung hướng dẫn người chơi
                 if (!productPoolList[productPoolList.Count - 1].isEmpty)
                 {
                     productPoolList[productPoolList.Count - 1].productList.RemoveAt(0);
@@ -932,6 +942,7 @@ public class BoardGenerator : MonoBehaviour
         {
             int rollIndex1 = 0;
 
+            // Phân bổ hàng hóa cho phần kệ đẩy đơn
             for (int i = 0; i < 4 * singlePushCount; i++)
             {
                 if (!productPoolList[rollIndex1].isEmpty)
@@ -944,6 +955,7 @@ public class BoardGenerator : MonoBehaviour
                         productPoolList.RemoveAt(rollIndex1);
                     }
 
+                    // Di chuyển sang pool kế tiếp, vòng lại đầu danh sách nếu cần
                     if (rollIndex1 >= (productPoolList.Count - 1))
                     {
                         rollIndex1 = 0;
@@ -960,7 +972,7 @@ public class BoardGenerator : MonoBehaviour
         // Gán ID sản phẩm cho các vị trí còn lại bằng cách rút từ pool
 
         int rollIndex = 0;
-        //Init remain Column positive product ID
+        // Điền nốt các vị trí còn lại trên kệ bằng cách rút tuần tự từ các pool
         for (int i = 0; i < shelfDeepMax * shelfCount; i++)
         {
 
@@ -979,6 +991,7 @@ public class BoardGenerator : MonoBehaviour
                             productPoolList.RemoveAt(rollIndex);
                         }
 
+                        // Chuyển sang pool tiếp theo, quay lại đầu khi hết danh sách
                         if (rollIndex >= (productPoolList.Count - 1))
                         {
                             rollIndex = 0;
@@ -1014,6 +1027,7 @@ public class BoardGenerator : MonoBehaviour
     // Tìm index đầu tiên trong pool còn sản phẩm
     public int FindIndexInPool()
     {
+        // Trả về index của pool còn sản phẩm gần nhất
         int index = -1;
 
         for (int i = 0; i < productPoolList.Count; i++)
@@ -1032,7 +1046,7 @@ public class BoardGenerator : MonoBehaviour
         return index;
     }
 
-    // Xáo trộn vị trí ba ô trong mỗi tile để tạo sự đa dạng
+    // Xáo trộn vị trí ba ô trong mỗi tile để tạo sự đa dạng, tránh việc sắp xếp theo mẫu cố định
     public void ShuffleElementInTiles()
     {
         for (int i = 0; i < originalTileList.Count; i++)
@@ -1044,6 +1058,8 @@ public class BoardGenerator : MonoBehaviour
     // Hoán đổi ngẫu nhiên vị trí các phần tử trong một tile
     public void ShuffleTile(ShelfTile tile)
     {
+        // Hoán đổi ngẫu nhiên vị trí các phần tử trong một tile
+        // Giúp mỗi lần sinh map không trùng lặp hoàn toàn
         //Debug.Log("SHUFFLE");
         int randomIndex = Random.Range(0, 3);
         int temp;
@@ -1075,6 +1091,7 @@ public class BoardGenerator : MonoBehaviour
     // Xáo trộn danh sách sản phẩm cho các kệ đẩy đơn
     public void MixSinglePush()
     {
+        // Xáo trộn thứ tự các sản phẩm dùng cho kệ đẩy đơn để tăng tính ngẫu nhiên
         List<int> tempList = new List<int>();
 
         for (int i = 0; i < 4 * singlePushCount; i++)
@@ -1094,6 +1111,7 @@ public class BoardGenerator : MonoBehaviour
     // Trộn thứ tự cột đầu tiên để tránh trùng lặp dễ đoán
     public void MixFirstColumn()
     {
+        // Xáo trộn thứ tự các tile ở cột đầu tiên để tạo cảm giác khác biệt giữa các ván chơi
         List<ShelfTile> tempList = new List<ShelfTile>();
 
         for (int i = 0; i < shelfCount; i++)
@@ -1113,6 +1131,7 @@ public class BoardGenerator : MonoBehaviour
     // Trộn các cột còn lại
     public void MixRemainColumn()
     {
+        // Tương tự MixFirstColumn nhưng áp dụng cho các cột còn lại
         List<ShelfTile> tempList = new List<ShelfTile>();
 
         for (int i = shelfCount; i < shelfDeepMax * shelfCount; i++)
@@ -1133,6 +1152,7 @@ public class BoardGenerator : MonoBehaviour
     // Chuyển dữ liệu tile gốc thành dạng ma trận dễ truy cập khi sinh kệ
     public void FillData()
     {
+        // Chuyển danh sách tile gốc về cấu trúc ma trận theo từng kệ để tiện truy xuất
         cellListData = new List<ShelfCell>();
 
         for (int i = 0; i < shelfCount; i++)
