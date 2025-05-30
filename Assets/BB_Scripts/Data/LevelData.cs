@@ -13,7 +13,7 @@ public class LevelData : ScriptableObject
     [Tooltip("ID duy nhất của màn chơi.")]
     public int ID;
 
-    [Tooltip("ID của scene Unity tương ứng với màn này.")]
+    [Tooltip("ID của scene(hình ảnh kệ sẽ được sử dụng) tương ứng với màn này.")]
     public int sceneID;
 
     [Tooltip("Thời gian giới hạn (giây) để hoàn thành màn.")]
@@ -22,12 +22,9 @@ public class LevelData : ScriptableObject
     [Tooltip("Tổng số sản phẩm cần tạo trong suốt màn.")]
     public int totalProductCount;
 
-    [Tooltip("Số bộ sản phẩm xuất hiện ngẫu nhiên.")]
+    [Tooltip("Bộ sản phẩm được sử dụng để tạo màn chơi.")]
+    // Bộ sản phẩm được sử dụng để tạo màn chơi, nếu là 10000 thì random, nếu khác 10000 thì sẽ sử dụng theo ID của bộ sản phẩm.
     public int dynamicProductSet;
-
-    [Tooltip("Số lần đẩy cho phép trong một hành động.")]
     public int singlePush;
-
-    [Tooltip("Số vòng kiểm tra ô trống trước khi kết thúc màn.")]
     public int roundsEmptyPlaceCount;
 }
