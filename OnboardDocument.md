@@ -1,8 +1,4 @@
-# Tài liệu Onboarding Chi tiết cho Intern - Dự án Game Sắp Xếp Hàng Hóa
-
-**Ngày:** 30 tháng 5 năm 2025
-
-**Phiên bản:** 1.1 (Dành cho Intern)
+# Tài liệu Onboarding Dự án Game Sắp Xếp Hàng Hóa
 
 **Mục lục:**
 
