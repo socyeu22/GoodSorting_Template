@@ -4,43 +4,59 @@ using UnityEngine;
 using DG.Tweening;
 using Lofelt.NiceVibrations;
 
+/// <summary>
+/// Quản lý kệ hàng và các hàng chứa vật phẩm trong màn chơi.
+/// Phụ trách sinh điểm đặt vật phẩm, kiểm tra hàng đầu tiên
+/// và xử lý khi đủ bộ ba giống nhau.
+/// </summary>
 public class ShelfController : MonoBehaviour
 {
 
+    // Số cột tối đa của kệ
     [HideInInspector] public int colSize;
 
+    // Độ sâu của kệ (số hàng đặt vật phẩm)
     [HideInInspector] public int deptSize;
 
+    // Tham chiếu tới container chứa các điểm đặt vật phẩm
     [HideInInspector] public ShelfContainer container;
 
+    // Danh sách các hàng (slot) trên kệ
     public List<ShelfSlot> shelfSlotList = new List<ShelfSlot>();
 
+    // Kiểu cấu trúc của kệ
     public enum ShelfType
     {
-        TRIPLE,
-        SINGLE
+        TRIPLE, // ba cột
+        SINGLE  // một cột
     }
 
+    // Kiểu kệ: ba cột hoặc một cột
     public ShelfType type;
 
+    // Đánh dấu kệ đã xử lý xong hết hàng hay chưa
     public bool isFinish;
 
+    // Vị trí gốc của từng cột dùng để tính toán sắp xếp vật phẩm
     private Vector3 waresRoot0;
     private Vector3 waresRoot1;
     private Vector3 waresRoot2;
 
     // Start is called before the first frame update
+    // Hàm khởi tạo, reset trạng thái kệ khi bắt đầu màn chơi
     void Start()
     {
         isFinish = false;
     }
 
     // Update is called once per frame
+    // Không sử dụng trong phiên bản hiện tại nhưng giữ để mở rộng về sau
     void Update()
     {
 
     }
 
+    // Sinh ra các vị trí đặt vật phẩm cho từng hàng của kệ
     public void GenerateWarePoint()
     {
 
@@ -102,6 +118,7 @@ public class ShelfController : MonoBehaviour
 
     }
 
+    // Tạo hàng rỗng đầu tiên khi kệ không còn hàng nào
     private void GenEmptyFirstRow()
     {
         container = transform.GetChild(0).GetComponent<ShelfContainer>();
@@ -130,6 +147,7 @@ public class ShelfController : MonoBehaviour
         }
     }
 
+    // Loại bỏ các hàng không chứa vật phẩm và căn chỉnh lại vị trí các hàng còn lại
     public void CleanEmptyRow()
     {
         bool checkEmpty = false;
@@ -225,6 +243,7 @@ public class ShelfController : MonoBehaviour
             GenEmptyFirstRow();
     }
 
+    // Cập nhật lại vị trí của toàn bộ hàng dựa trên thông tin gốc
     public void RePosition()
     {
         for (int i = 0; i < shelfSlotList.Count; i++)
@@ -289,6 +308,7 @@ public class ShelfController : MonoBehaviour
         }
     }
 
+    // Tìm vị trí trống gần nhất với vị trí chọn hiện tại trên hàng đầu tiên
     public int FindEmptySlotInShelf(Vector3 selectedWaresPos)
     {
         int emptySlotIndex = -1;
@@ -322,6 +342,7 @@ public class ShelfController : MonoBehaviour
         return emptySlotIndex;
     }
 
+    // Kiểm tra hàng đầu tiên để xem có đủ bộ ba giống nhau hay không
     public void CheckFirstRow()
     {
         if (type == ShelfType.TRIPLE)
@@ -344,6 +365,7 @@ public class ShelfController : MonoBehaviour
 
     }
 
+    // Xóa ba vật phẩm ở hàng đầu tiên kèm hiệu ứng
     private void ClearFirstRow()
     {
         shelfSlotList[0].waresInRowSlot[0].currentState = WaresController.STATE.PROCESS;
@@ -383,6 +405,7 @@ public class ShelfController : MonoBehaviour
 
     }
 
+    // Đẩy toàn bộ hàng về phía trước khi hàng đầu tiên bị xóa
     private void PushRow()
     {
 
@@ -434,12 +457,14 @@ public class ShelfController : MonoBehaviour
 
     }
 
+    // Chờ một khoảng thời gian ngắn trước khi đặt lại trạng thái của kệ
     private IEnumerator ResetStateIE()
     {
         yield return new WaitForSeconds(0.2f);
         ResetState();
     }
 
+    // Đặt lại trạng thái của tất cả vật phẩm về IDLE
     private void ResetState()
     {
         if (shelfSlotList.Count > 0)
@@ -455,6 +480,7 @@ public class ShelfController : MonoBehaviour
         }
     }
 
+    // Đẩy vật phẩm trong kệ đơn (một cột) về phía trước
     private void PushSingleShelf()
     {
         if (shelfSlotList.Count > 0)
@@ -504,10 +530,13 @@ public class ShelfController : MonoBehaviour
 }
 
 [System.Serializable]
+// Đại diện cho một hàng trong kệ, lưu trữ danh sách vật phẩm và vị trí của chúng
 public class ShelfSlot
 {
+    // Danh sách vật phẩm hiện có trong hàng
     public List<WaresController> waresInRowSlot = new List<WaresController>();
 
+    // Danh sách vị trí đặt vật phẩm tương ứng
     public List<Transform> warePointList = new List<Transform>();
 
 }
